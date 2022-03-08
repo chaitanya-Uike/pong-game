@@ -1,35 +1,32 @@
 const ball = document.querySelector("#ball")
-const stopBtn = document.querySelector("#stop")
 const playArea = document.querySelector(".play-area")
+const paddleLeft = document.querySelector("#paddleLeft")
+const paddleRight = document.querySelector("#paddleRight")
 
 const playAreaBounds = playArea.getBoundingClientRect()
 
 
 let playing = true
 
-function delay(n) {
-    return new Promise(function (resolve) {
-        setTimeout(resolve, n * 1000);
-    });
-}
+console.log(ball.offsetLeft, ball.offsetTop);
 
-
-function gradient(degress) {
-    return Math.tan(degress * Math.PI / 180)
-}
-
+play()
 
 async function play() {
+    enableInput()
+
     let x, y, c
-    let theta = 55
     let dir = 1;
+    let theta = launchAngle()
 
     // initial ball position
     x = ball.offsetLeft
-    c = ball.offsetTop
+    c = getYIntercept()
+
+    difficultySetting()
 
     while (playing) {
-        await delay(0.001)
+        await delay(1)
 
         update()
 
@@ -75,7 +72,7 @@ async function play() {
         // add randomness to the angle of reflection after the ball is bounced by the paddles 
 
         // right wall
-        if (x + ball.clientWidth >= playAreaBounds.width) {
+        if (x + ball.clientWidth + paddleRight.clientWidth >= playAreaBounds.width && y >= paddleRight.offsetTop && y <= paddleRight.offsetTop + paddleRight.getBoundingClientRect().height) {
             let angles = []
 
             // 25 is sybtracted to get safe angles and prevent tan(90) or tan(0)
@@ -88,13 +85,16 @@ async function play() {
             theta = angles[choice]
 
             c = getYIntercept()
-            dir = -1
+            dir *= -1
 
             update()
         }
 
+        if (x >= playAreaBounds.width)
+            playing = false
+
         // left wall
-        if (x <= 0) {
+        if (x <= paddleLeft.clientWidth && y >= paddleLeft.offsetTop && y <= paddleLeft.offsetTop + paddleLeft.getBoundingClientRect().height) {
             let angles = []
             angles.push(randomIntFromInterval(285, 335))
             angles.push(randomIntFromInterval(25, 65))
@@ -105,24 +105,93 @@ async function play() {
             theta = angles[choice]
 
             c = getYIntercept()
-            dir = 1
+            dir = Math.abs(dir)
 
             update()
         }
+
+        if (x <= -ball.clientWidth)
+            playing = false
 
     }
 
     function getYIntercept() {
         return ball.offsetTop - gradient(theta) * ball.offsetLeft
     }
+
+    function difficultySetting() {
+        // increase speed after 5s
+        let interval = 5000
+        let count = 0;
+
+        const difficultyTimer = setInterval(() => {
+            if (dir < 0)
+                dir -= 0.2
+            else
+                dir += 0.2
+
+            count++
+
+            if (count === 10)
+                clearInterval(difficultyTimer)
+        }, interval);
+    }
+
+    function launchAngle() {
+        let angles = [225, 135, 45, 315]
+
+        let choice = Math.round(Math.random() * 3)
+        if (choice < 1)
+            dir *= -1
+
+        return angles[choice]
+    }
+}
+
+function enableInput() {
+    const dy = 60
+
+    document.addEventListener('keydown', e => {
+        if (e.key === 'w') {
+            if (paddleLeft.offsetTop - dy <= 0)
+                paddleLeft.style.top = 0;
+            else
+                paddleLeft.style.top = paddleLeft.offsetTop - dy + "px";
+        }
+        if (e.key === 's') {
+            if (paddleLeft.offsetTop + paddleLeft.getBoundingClientRect().height + dy >= playAreaBounds.height)
+                paddleLeft.style.top = playAreaBounds.height - paddleLeft.getBoundingClientRect().height - 5 + "px"
+            else
+                paddleLeft.style.top = paddleLeft.offsetTop + dy + "px";
+        }
+
+
+        if (e.key === 'i') {
+            if (paddleRight.offsetTop - dy <= 0)
+                paddleRight.style.top = 0;
+            else
+                paddleRight.style.top = paddleRight.offsetTop - dy + "px";
+        }
+        if (e.key === 'k') {
+            if (paddleRight.offsetTop + paddleRight.getBoundingClientRect().height + dy >= playAreaBounds.height)
+                paddleRight.style.top = playAreaBounds.height - paddleRight.getBoundingClientRect().height - 5 + "px"
+            else
+                paddleRight.style.top = paddleRight.offsetTop + dy + "px";
+        }
+    })
 }
 
 
-play()
+function delay(n) {
+    return new Promise(function (resolve) {
+        setTimeout(resolve, n);
+    });
+}
 
-stopBtn.addEventListener("click", () => {
-    playing = false
-})
+
+function gradient(degress) {
+    return Math.tan(degress * Math.PI / 180)
+}
 
 function randomIntFromInterval(min, max) {
     return Math.floor(Math.random() * (max - min + 1) + min)
