@@ -1,0 +1,31 @@
+*{
+    margin: 0;
+    padding: 0;
+}
+
+main{
+    display: flex;
+    justify-content: center;
+    align-items: center;
+
+    height: 100vh;
+}
+
+.play-area{
+    position: relative;
+
+    width: 600px;
+    height: 600px;
+
+    border: 2px solid black;
+}
+
+#ball{
+    position: absolute;
+
+    width: 25px;
+    height: 25px;
+    border-radius: 50%;
+
+    background-color: black;
+}
