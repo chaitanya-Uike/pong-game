@@ -8,20 +8,24 @@ const playAreaBounds = playArea.getBoundingClientRect()
 
 let playing = true
 
-console.log(ball.offsetLeft, ball.offsetTop);
-
 play()
 
 async function play() {
     enableInput()
 
-    let x, y, c
-    let dir = 1;
+    let x, y
     let theta = launchAngle()
 
     // initial ball position
     x = ball.offsetLeft
-    c = getYIntercept()
+    y = ball.offsetTop
+
+    // initial velocity 2
+    let v = 2
+
+    let dx, dy
+
+    setDxDy()
 
     difficultySetting()
 
@@ -37,11 +41,16 @@ async function play() {
         detectCollision()
     }
 
+    function setDxDy() {
+        dx = Math.sqrt(v) * Math.cos(theta * Math.PI / 180)
+        dy = Math.sqrt(v) * Math.sin(theta * Math.PI / 180)
+    }
+
     function update() {
-        x += dir
+        x += dx
 
         // to prevent overshoot 0 <= y <= playAreaBounds.height - ball.clientHeight
-        y = Math.min(playAreaBounds.height - ball.clientHeight, Math.max(0, gradient(theta) * x + c))
+        y = Math.min(playAreaBounds.height - ball.clientHeight, Math.max(0, y + dy))
     }
 
     function detectCollision() {
@@ -52,9 +61,8 @@ async function play() {
                 theta -= 270
             else
                 theta -= 90
-            c = getYIntercept()
 
-            update()
+            setDxDy()
         }
 
         // bottom wall
@@ -64,9 +72,7 @@ async function play() {
             else
                 theta += 90
 
-            c = getYIntercept()
-
-            update()
+            setDxDy()
         }
 
         // add randomness to the angle of reflection after the ball is bounced by the paddles 
@@ -84,10 +90,7 @@ async function play() {
 
             theta = angles[choice]
 
-            c = getYIntercept()
-            dir *= -1
-
-            update()
+            setDxDy()
         }
 
         if (x >= playAreaBounds.width)
@@ -104,10 +107,7 @@ async function play() {
 
             theta = angles[choice]
 
-            c = getYIntercept()
-            dir = Math.abs(dir)
-
-            update()
+            setDxDy()
         }
 
         if (x <= -ball.clientWidth)
@@ -115,25 +115,12 @@ async function play() {
 
     }
 
-    function getYIntercept() {
-        return ball.offsetTop - gradient(theta) * ball.offsetLeft
-    }
-
     function difficultySetting() {
         // increase speed after 5s
         let interval = 5000
-        let count = 0;
 
-        const difficultyTimer = setInterval(() => {
-            if (dir < 0)
-                dir -= 0.2
-            else
-                dir += 0.2
-
-            count++
-
-            if (count === 10)
-                clearInterval(difficultyTimer)
+        setInterval(() => {
+            v += 2
         }, interval);
     }
 
@@ -141,44 +128,53 @@ async function play() {
         let angles = [225, 135, 45, 315]
 
         let choice = Math.round(Math.random() * 3)
-        if (choice < 1)
-            dir *= -1
 
         return angles[choice]
     }
 }
 
 function enableInput() {
-    const dy = 60
+    const dh = 60
 
-    document.addEventListener('keydown', e => {
-        if (e.key === 'w') {
-            if (paddleLeft.offsetTop - dy <= 0)
+    var keyPressed = { 'w': false, 's': false, 'i': false, 'k': false }
+
+    onkeydown = (e) => {
+        if (keyPressed[e.key] != null)
+            keyPressed[e.key] = true
+
+        onkeyup = (e) => {
+            if (keyPressed[e.key] != null)
+                keyPressed[e.key] = false
+        };
+
+        if (keyPressed['w']) {
+            if (paddleLeft.offsetTop - dh <= 0)
                 paddleLeft.style.top = 0;
             else
-                paddleLeft.style.top = paddleLeft.offsetTop - dy + "px";
+                paddleLeft.style.top = paddleLeft.offsetTop - dh + "px";
         }
-        if (e.key === 's') {
-            if (paddleLeft.offsetTop + paddleLeft.getBoundingClientRect().height + dy >= playAreaBounds.height)
+        if (keyPressed['s']) {
+            if (paddleLeft.offsetTop + paddleLeft.getBoundingClientRect().height + dh >= playAreaBounds.height)
                 paddleLeft.style.top = playAreaBounds.height - paddleLeft.getBoundingClientRect().height - 5 + "px"
             else
-                paddleLeft.style.top = paddleLeft.offsetTop + dy + "px";
+                paddleLeft.style.top = paddleLeft.offsetTop + dh + "px";
         }
 
 
-        if (e.key === 'i') {
-            if (paddleRight.offsetTop - dy <= 0)
+        if (keyPressed['i']) {
+            if (paddleRight.offsetTop - dh <= 0)
                 paddleRight.style.top = 0;
             else
-                paddleRight.style.top = paddleRight.offsetTop - dy + "px";
+                paddleRight.style.top = paddleRight.offsetTop - dh + "px";
         }
-        if (e.key === 'k') {
-            if (paddleRight.offsetTop + paddleRight.getBoundingClientRect().height + dy >= playAreaBounds.height)
+        if (keyPressed['k']) {
+            if (paddleRight.offsetTop + paddleRight.getBoundingClientRect().height + dh >= playAreaBounds.height)
                 paddleRight.style.top = playAreaBounds.height - paddleRight.getBoundingClientRect().height - 5 + "px"
             else
-                paddleRight.style.top = paddleRight.offsetTop + dy + "px";
+                paddleRight.style.top = paddleRight.offsetTop + dh + "px";
         }
-    })
+    }
+
 }
 
 
